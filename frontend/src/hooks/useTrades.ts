@@ -32,7 +32,14 @@ export function useTrades(chainId: number, user?: `0x${string}`) {
       })
 
       const tradesData: Trade[] = logs.map((log: any) => ({
-        ...log.args,
+        makerOrderId: log.args.makerOrderId,
+        takerOrderId: log.args.takerOrderId,
+        maker: log.args.maker,
+        taker: log.args.taker,
+        price: log.args.price,
+        amount: log.args.amount,
+        fee: log.args.fee,
+        timestamp: log.args.timestamp,
         txHash: log.transactionHash,
       })) as Trade[]
       

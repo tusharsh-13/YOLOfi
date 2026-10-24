@@ -11,32 +11,14 @@ export function OrderBookView({ onPriceClick }: OrderBookViewProps) {
   const { bids, asks, spread, loading, error, refetch } = useBook(31337)
   const [maxVolume, setMaxVolume] = useState<bigint>(0n)
 
+  // Calculate max volume for depth bars (must be before early returns)
   useMemo(() => {
     const maxBid = bids.reduce((max, bid) => bid.total > max ? bid.total : max, 0n)
     const maxAsk = asks.reduce((max, ask) => ask.total > max ? ask.total : max, 0n)
     setMaxVolume(maxBid > maxAsk ? maxBid : maxAsk)
   }, [bids, asks])
 
-  if (loading) {
-    return (
-      <div className="order-book-view loading">
-        <div className="skeleton asks" />
-        <div className="spread skeleton" />
-        <div className="skeleton bids" />
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="order-book-view error">
-        <p>Error loading order book: {error}</p>
-        <button onClick={refetch}>Retry</button>
-      </div>
-    )
-  }
-
-  // Calculate cumulative volumes for depth chart
+  // Calculate cumulative volumes for depth chart (must be before early returns)
   const bidsWithCumulative = useMemo(() => {
     let cumulative = 0n
     return bids.map(bid => {
@@ -56,6 +38,25 @@ export function OrderBookView({ onPriceClick }: OrderBookViewProps) {
   const getVolumeRatio = (total: bigint, maxVol: bigint) => {
     if (maxVol === 0n) return 0
     return Number(total) / Number(maxVol) * 100
+  }
+
+  if (loading) {
+    return (
+      <div className="order-book-view loading">
+        <div className="skeleton asks" />
+        <div className="spread skeleton" />
+        <div className="skeleton bids" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="order-book-view error">
+        <p>Error loading order book: {error}</p>
+        <button onClick={refetch}>Retry</button>
+      </div>
+    )
   }
 
   return (
