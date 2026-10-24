@@ -2,6 +2,8 @@ import { createPublicClient, createWalletClient, custom, http } from 'viem'
 import { anvil, baseSepolia } from './chain'
 import { ORDER_BOOK_ABI, ERC20_ABI } from './abi'
 
+export { ORDER_BOOK_ABI }
+
 declare global {
   interface Window {
     ethereum?: {

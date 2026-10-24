@@ -2,6 +2,10 @@ import { useWallet } from './hooks/useWallet'
 import { WalletButton } from './components/WalletButton'
 import { Faucet } from './components/Faucet'
 import { DepositPanel } from './components/DepositPanel'
+import { OrderForm } from './components/OrderForm'
+import { OrderBookView } from './components/OrderBookView'
+import { MyOrders } from './components/MyOrders'
+import { TradeFeed } from './components/TradeFeed'
 import './App.css'
 
 function App() {
@@ -38,17 +42,16 @@ function App() {
               <DepositPanel />
             </aside>
             <section className="trading-section">
-              <div className="trading-placeholder">
-                <h2>Trading Interface</h2>
-                <p>OrderBookView, OrderForm, MyOrders, TradeFeed coming in Phase 6</p>
-                <div className="status">
-                  <span className="status-indicator connected" />
-                  <span>Connected to {currentChain.name}</span>
+              <div className="trading-main">
+                <div className="book-and-form">
+                  <OrderBookView />
+                  <div className="divider-vertical" />
+                  <OrderForm />
                 </div>
-                <div className="contract-info">
-                  <strong>OrderBook:</strong> {import.meta.env.VITE_ORDERBOOK_ADDRESS || 'Not configured'}<br />
-                  <strong>tYBTC:</strong> {import.meta.env.VITE_TYBTC_ADDRESS || 'Not configured'}<br />
-                  <strong>tUSDC:</strong> {import.meta.env.VITE_TUSDC_ADDRESS || 'Not configured'}
+                <div className="divider" />
+                <div className="bottom-panels">
+                  <MyOrders />
+                  <TradeFeed />
                 </div>
               </div>
             </section>
