@@ -34,7 +34,10 @@ contract OrderBook is IOrderBook, ReentrancyGuard {
     uint256 public bestAsk;
 
     // Per-user balances: free (available) + locked (in open orders)
-    mapping(address => UserBalances) public balances;
+    mapping(address => uint256) public baseFree;
+    mapping(address => uint256) public baseLocked;
+    mapping(address => uint256) public quoteFree;
+    mapping(address => uint256) public quoteLocked;
 
     // Order storage: id -> Order
     mapping(uint64 => Order) public orders;
@@ -92,9 +95,9 @@ contract OrderBook is IOrderBook, ReentrancyGuard {
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
 
         if (token == base) {
-            balances[msg.sender].baseFree += amount;
+            baseFree[msg.sender] += amount;
         } else {
-            balances[msg.sender].quoteFree += amount;
+            quoteFree[msg.sender] += amount;
         }
 
         emit Deposited(msg.sender, token, amount);
@@ -107,14 +110,13 @@ contract OrderBook is IOrderBook, ReentrancyGuard {
         if (amount == 0) revert IOrderBook.ZeroAmount();
         if (token != base && token != quote) revert IOrderBook.InvalidToken(token);
 
-        UserBalances storage b = balances[msg.sender];
-        uint256 free = (token == base) ? b.baseFree : b.quoteFree;
+        uint256 free = (token == base) ? baseFree[msg.sender] : quoteFree[msg.sender];
         if (free < amount) revert IOrderBook.InsufficientBalance(free, amount);
 
         if (token == base) {
-            b.baseFree -= amount;
+            baseFree[msg.sender] -= amount;
         } else {
-            b.quoteFree -= amount;
+            quoteFree[msg.sender] -= amount;
         }
 
         IERC20(token).safeTransfer(msg.sender, amount);
@@ -302,12 +304,178 @@ contract OrderBook is IOrderBook, ReentrancyGuard {
         order.userNext = 0;
     }
 
+    // ============ Matching Engine ============
+    /// @notice Execute a trade between taker (incoming) and maker (resting) order
+    /// @param takerOrderId The incoming order ID
+    /// @param makerOrderId The resting order ID
+    /// @param fillAmount Amount to fill (base units)
+    /// @param makerPrice Price of the maker order (trade executes at this price)
+    /// @return fee The taker fee charged
+    function _executeTrade(uint64 takerOrderId, uint64 makerOrderId, uint256 fillAmount, uint256 makerPrice)
+        internal
+        returns (uint256 fee)
+    {
+        Order storage takerOrder = orders[takerOrderId];
+        Order storage makerOrder = orders[makerOrderId];
+
+        // Self-trade protection
+        if (takerOrder.owner == makerOrder.owner) {
+            revert IOrderBook.SelfTrade();
+        }
+
+        // Update filled amounts
+        takerOrder.filled += fillAmount;
+        makerOrder.filled += fillAmount;
+
+        // Update price level totalRemaining
+        PriceLevel storage takerLevel = priceLevels[takerOrder.side][takerOrder.price];
+        PriceLevel storage makerLevel = priceLevels[makerOrder.side][makerOrder.price];
+        if (takerLevel.totalRemaining >= fillAmount) takerLevel.totalRemaining -= fillAmount;
+        if (makerLevel.totalRemaining >= fillAmount) makerLevel.totalRemaining -= fillAmount;
+
+        // Settlement: transfer between internal balances
+        address taker = takerOrder.owner;
+        address maker = makerOrder.owner;
+
+        if (takerOrder.side == Side.BUY) {
+            // Taker is BUY, maker is SELL
+            // Taker receives base, pays quote at maker's price
+            // Maker receives quote, pays base
+            uint256 quoteAmount = (fillAmount * makerPrice) / PRICE_SCALE;
+
+            // Calculate taker fee (in quote)
+            fee = (quoteAmount * takerFeeBps) / 10000;
+
+            // Taker: receive base, pay quote (notional + fee)
+            baseFree[taker] += fillAmount;
+            quoteLocked[taker] -= (quoteAmount + fee);
+
+            // Maker: receive quote, pay base
+            quoteFree[maker] += quoteAmount;
+            baseLocked[maker] -= fillAmount;
+
+            // Accrue fee
+            feeBalance += fee;
+
+            // Refund price improvement to taker (buyer)
+            // Taker locked at their price (notional + fee headroom), but trade executes at maker's (better) price
+            // Full refund = (lockedQuote + lockedFee) - (actualQuote + actualFee)
+            uint256 takerPrice = takerOrder.price;
+            if (takerPrice > makerPrice) {
+                uint256 notionalImprovement = (fillAmount * (takerPrice - makerPrice)) / PRICE_SCALE;
+                uint256 feeImprovement = (notionalImprovement * takerFeeBps) / 10000;
+                uint256 totalImprovement = notionalImprovement + feeImprovement;
+                quoteLocked[taker] -= totalImprovement;
+                quoteFree[taker] += totalImprovement;
+            }
+        } else {
+            // Taker is SELL, maker is BUY
+            // Taker receives quote, pays base
+            // Maker receives base, pays quote at maker's price
+            uint256 quoteAmount = (fillAmount * makerPrice) / PRICE_SCALE;
+
+            // Calculate taker fee (in quote)
+            fee = (quoteAmount * takerFeeBps) / 10000;
+
+            // Taker: receive quote (notional - fee), pay base
+            quoteFree[taker] += (quoteAmount - fee);
+            baseLocked[taker] -= fillAmount;
+
+            // Maker: receive base, pay quote
+            baseFree[maker] += fillAmount;
+            quoteLocked[maker] -= quoteAmount;
+
+            // Accrue fee
+            feeBalance += fee;
+
+            // Refund price improvement to taker (seller)
+            // Taker locked base at their price, but receives quote at maker's (better) price
+            // The improvement is extra quote received: (makerPrice - takerPrice) * fillAmount / 1e18
+            // SELL takers don't lock quote, so improvement goes directly to quoteFree
+            uint256 takerPrice = takerOrder.price;
+            if (takerPrice < makerPrice) {
+                uint256 notionalImprovement = (fillAmount * (makerPrice - takerPrice)) / PRICE_SCALE;
+                quoteFree[taker] += notionalImprovement;
+            }
+        }
+
+        emit TradeExecuted(
+            makerOrderId, takerOrderId, maker, taker, makerPrice, fillAmount, fee, uint256(block.timestamp)
+        );
+    }
+
+    /// @notice Match incoming order against resting orders on opposite side
+    /// @param orderId The incoming order ID
+    /// @param maxFills Maximum number of fills to execute
+    /// @return remaining Amount left unfilled
+    function _matchOrders(uint64 orderId, uint256 maxFills) internal returns (uint256 remaining) {
+        Order storage takerOrder = orders[orderId];
+        remaining = takerOrder.amount - takerOrder.filled;
+        uint256 fills = 0;
+
+        // Determine opposite side
+        Side makerSide = (takerOrder.side == Side.BUY) ? Side.SELL : Side.BUY;
+
+        // Start from best price on maker side
+        uint256 currentPrice = (makerSide == Side.BUY) ? bestBid : bestAsk;
+
+        while (remaining > 0 && fills < maxFills && currentPrice != 0) {
+            // Check if price crosses
+            bool priceCrosses;
+            if (takerOrder.side == Side.BUY) {
+                // Buy crosses if maker's ask <= taker's bid
+                priceCrosses = currentPrice <= takerOrder.price;
+            } else {
+                // Sell crosses if maker's bid >= taker's ask
+                priceCrosses = currentPrice >= takerOrder.price;
+            }
+
+            if (!priceCrosses) break;
+
+            PriceLevel storage level = priceLevels[makerSide][currentPrice];
+            uint64 makerOrderId = level.head;
+
+            // Walk through orders at this price level (FIFO)
+            while (makerOrderId != 0 && remaining > 0 && fills < maxFills) {
+                Order storage makerOrder = orders[makerOrderId];
+                uint256 makerRemaining = makerOrder.amount - makerOrder.filled;
+                uint256 fillAmount = remaining < makerRemaining ? remaining : makerRemaining;
+
+                // Execute trade at maker's price
+                _executeTrade(orderId, makerOrderId, fillAmount, currentPrice);
+
+                remaining -= fillAmount;
+                fills++;
+
+                // Move to next order at this level
+                makerOrderId = makerOrder.next;
+
+                // If maker order fully filled, remove it from level
+                if (makerOrder.filled == makerOrder.amount) {
+                    _removeOrderFromLevel(makerSide, currentPrice, makerOrder.id);
+                    _removeOrderFromUser(makerOrder.owner, makerOrder.id);
+                }
+            }
+
+            // If level is empty, remove it
+            if (!_levelExists(makerSide, currentPrice)) {
+                _removePriceLevelIfEmpty(makerSide, currentPrice);
+                currentPrice = (makerSide == Side.BUY) ? bestBid : bestAsk;
+            } else {
+                // Move to next price level
+                currentPrice = levelNext[makerSide][currentPrice];
+            }
+        }
+
+        return remaining;
+    }
+
     // ============ Order Placement ============
-    /// @notice Place a limit order (rests in book, no matching in Phase 2)
+    /// @notice Place a limit order (matches against book, rests remainder)
     /// @param side BUY or SELL
     /// @param price Quote units per 1e18 base (must be multiple of tickSize)
     /// @param amount Base units (must be multiple of lotSize, >= minOrderSize)
-    /// @param maxFills Max fills per transaction (for future matching)
+    /// @param maxFills Max fills per transaction (capped at MAX_FILLS_CAP)
     /// @param hintPrice Optional hint for price level insertion (0 = start from best)
     /// @return orderId The created order ID
     function placeLimitOrder(Side side, uint256 price, uint256 amount, uint256 maxFills, uint256 hintPrice)
@@ -323,22 +491,21 @@ contract OrderBook is IOrderBook, ReentrancyGuard {
         if (maxFills == 0 || maxFills > MAX_FILLS_CAP) revert IOrderBook.InvalidMaxFills(maxFills);
 
         // Lock funds
-        UserBalances storage b = balances[msg.sender];
         if (side == Side.BUY) {
             // Buy: lock quote (notional + max fee)
-            // quoteAmount = amount * price / 1e18
             uint256 quoteAmount = (amount * price) / PRICE_SCALE;
-            // Max fee = quoteAmount * takerFeeBps / 10000
             uint256 maxFee = (quoteAmount * takerFeeBps) / 10000;
             uint256 totalLocked = quoteAmount + maxFee;
-            if (b.quoteFree < totalLocked) revert IOrderBook.InsufficientBalance(b.quoteFree, totalLocked);
-            b.quoteFree -= totalLocked;
-            b.quoteLocked += totalLocked;
+            if (quoteFree[msg.sender] < totalLocked) {
+                revert IOrderBook.InsufficientBalance(quoteFree[msg.sender], totalLocked);
+            }
+            quoteFree[msg.sender] -= totalLocked;
+            quoteLocked[msg.sender] += totalLocked;
         } else {
             // Sell: lock base
-            if (b.baseFree < amount) revert IOrderBook.InsufficientBalance(b.baseFree, amount);
-            b.baseFree -= amount;
-            b.baseLocked += amount;
+            if (baseFree[msg.sender] < amount) revert IOrderBook.InsufficientBalance(baseFree[msg.sender], amount);
+            baseFree[msg.sender] -= amount;
+            baseLocked[msg.sender] += amount;
         }
 
         // Create order
@@ -357,16 +524,28 @@ contract OrderBook is IOrderBook, ReentrancyGuard {
             userNext: 0
         });
 
-        // Insert price level if needed
-        _insertPriceLevel(side, price, hintPrice);
+        // Match against existing orders
+        uint256 remaining = _matchOrders(orderId, maxFills);
 
-        // Add to price level FIFO
-        _addOrderToLevel(side, price, orderId);
-
-        // Add to user's order list
-        _addOrderToUser(msg.sender, orderId);
-
-        emit OrderPlaced(orderId, msg.sender, side, price, amount);
+        if (remaining > 0) {
+            // Rest remainder in book
+            _insertPriceLevel(side, price, hintPrice);
+            _addOrderToLevel(side, price, orderId);
+            _addOrderToUser(msg.sender, orderId);
+            emit OrderPlaced(orderId, msg.sender, side, price, amount);
+        } else {
+            // Fully filled, clean up
+            _removeOrderFromUser(msg.sender, orderId);
+            // Refund unused fee headroom for buys
+            if (side == Side.BUY) {
+                uint256 quoteAmount = (amount * price) / PRICE_SCALE;
+                uint256 maxFee = (quoteAmount * takerFeeBps) / 10000;
+                // Actual fee paid is tracked in feeBalance, but we locked max fee
+                // The difference between locked and actual fee is already handled in _executeTrade
+                // No additional refund needed here since _executeTrade handles it
+            }
+            emit OrderPlaced(orderId, msg.sender, side, price, amount);
+        }
     }
 
     // ============ Order Cancellation ============
@@ -386,18 +565,22 @@ contract OrderBook is IOrderBook, ReentrancyGuard {
         }
 
         // Unlock funds
-        UserBalances storage b = balances[msg.sender];
         if (order.side == Side.BUY) {
-            // Buy: unlock quote (notional + fee headroom for remaining)
-            uint256 quoteAmount = (remaining * order.price) / PRICE_SCALE;
-            uint256 maxFee = (quoteAmount * takerFeeBps) / 10000;
-            uint256 totalLocked = quoteAmount + maxFee;
-            b.quoteLocked -= totalLocked;
-            b.quoteFree += totalLocked;
+            // Buy: unlock quote for remaining notional + full fee headroom (since maker doesn't pay fee)
+            // Total locked = quoteAmount_total + maxFee_total
+            // During matching, only notional was reduced for fills
+            // So remaining locked = quoteAmount_remaining + maxFee_total
+            uint256 quoteAmountTotal = (order.amount * order.price) / PRICE_SCALE;
+            uint256 maxFeeTotal = (quoteAmountTotal * takerFeeBps) / 10000;
+            uint256 quoteAmountFilled = (order.filled * order.price) / PRICE_SCALE;
+            uint256 quoteAmountRemaining = quoteAmountTotal - quoteAmountFilled;
+            uint256 totalLocked = quoteAmountRemaining + maxFeeTotal;
+            quoteLocked[msg.sender] -= totalLocked;
+            quoteFree[msg.sender] += totalLocked;
         } else {
-            // Sell: unlock base
-            b.baseLocked -= remaining;
-            b.baseFree += remaining;
+            // Sell: unlock base (maker pays no fee, so base locked exactly matches remaining)
+            baseLocked[msg.sender] -= remaining;
+            baseFree[msg.sender] += remaining;
         }
 
         // Remove from price level
@@ -414,7 +597,12 @@ contract OrderBook is IOrderBook, ReentrancyGuard {
 
     // ============ View Functions ============
     function getBalances(address user) external view override returns (UserBalances memory) {
-        return balances[user];
+        return UserBalances({
+            baseFree: baseFree[user],
+            baseLocked: baseLocked[user],
+            quoteFree: quoteFree[user],
+            quoteLocked: quoteLocked[user]
+        });
     }
 
     function getOrder(uint64 orderId) external view override returns (Order memory) {

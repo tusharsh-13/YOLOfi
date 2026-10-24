@@ -360,8 +360,9 @@ contract OrderBookTest is Test {
         uint64 id1 = book.placeLimitOrder(IOrderBook.Side.BUY, 100_000 * 1e4, 10 * 1e14, 20, 0);
         vm.prank(alice);
         uint64 id2 = book.placeLimitOrder(IOrderBook.Side.BUY, 100_000 * 1e4, 10 * 1e14, 20, 0);
+        // Sell at higher price (doesn't cross with buy at 100_000)
         vm.prank(alice);
-        uint64 id3 = book.placeLimitOrder(IOrderBook.Side.SELL, 100_000 * 1e4, 10 * 1e14, 20, 0);
+        uint64 id3 = book.placeLimitOrder(IOrderBook.Side.SELL, 110_000 * 1e4, 10 * 1e14, 20, 0);
         assertEq(id1, 1);
         assertEq(id2, 2);
         assertEq(id3, 3);
