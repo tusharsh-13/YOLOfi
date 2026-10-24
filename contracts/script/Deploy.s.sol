@@ -61,7 +61,7 @@ contract Deploy is Script {
 
         // Write deployment info to file
         string memory chainIdStr = vm.toString(block.chainid);
-        string memory filename = string(abi.encodePacked("./deployments/", chainIdStr, ".json"));
+        string memory filename = string(abi.encodePacked(vm.projectRoot(), "/deployments/", chainIdStr, ".json"));
         string memory tYBTCStr = vm.toString(address(tYBTC));
         string memory tUSDCStr = vm.toString(address(tUSDC));
         string memory bookStr = vm.toString(address(book));
