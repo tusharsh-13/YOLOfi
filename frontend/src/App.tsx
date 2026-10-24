@@ -1,121 +1,86 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
+import { useWallet } from './hooks/useWallet'
+import { WalletButton } from './components/WalletButton'
+import { Faucet } from './components/Faucet'
+import { DepositPanel } from './components/DepositPanel'
 import './App.css'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const { chainId, isConnected, targetChains, switchChain } = useWallet()
+  const currentChain = targetChains.find(c => c.id === chainId) || targetChains[0]
+  const isTargetChain = targetChains.some(c => c.id === chainId)
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+    <div className="app">
+      <header className="header">
+        <div className="header-left">
+          <h1 className="logo">YOLOfi</h1>
+          <span className="subtitle">Fully Onchain CLOB DEX</span>
         </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
+        <div className="header-center">
+          <div className="network-indicator">
+            <span className={`chain-badge ${isTargetChain ? '' : 'wrong-chain'}`}>
+              {currentChain.name} (Chain {chainId})
+              {!isTargetChain && ' ⚠️ Wrong Network'}
+            </span>
+          </div>
         </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+        <div className="header-right">
+          <WalletButton />
+        </div>
+      </header>
 
-      <div className="ticks"></div>
+      <main className="main">
+        {isConnected && isTargetChain ? (
+          <div className="grid">
+            <aside className="sidebar">
+              <Faucet />
+              <div className="divider" />
+              <DepositPanel />
+            </aside>
+            <section className="trading-section">
+              <div className="trading-placeholder">
+                <h2>Trading Interface</h2>
+                <p>OrderBookView, OrderForm, MyOrders, TradeFeed coming in Phase 6</p>
+                <div className="status">
+                  <span className="status-indicator connected" />
+                  <span>Connected to {currentChain.name}</span>
+                </div>
+                <div className="contract-info">
+                  <strong>OrderBook:</strong> {import.meta.env.VITE_ORDERBOOK_ADDRESS || 'Not configured'}<br />
+                  <strong>tYBTC:</strong> {import.meta.env.VITE_TYBTC_ADDRESS || 'Not configured'}<br />
+                  <strong>tUSDC:</strong> {import.meta.env.VITE_TUSDC_ADDRESS || 'Not configured'}
+                </div>
+              </div>
+            </section>
+          </div>
+        ) : isConnected && !isTargetChain ? (
+          <div className="wrong-network">
+            <h2>Wrong Network</h2>
+            <p>Please switch to one of the supported networks:</p>
+            <ul>
+              {targetChains.map(chain => (
+                <li key={chain.id}>
+                  <button onClick={() => switchChain(chain.id)}>
+                    Switch to {chain.name} (Chain {chain.id})
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : (
+          <div className="welcome">
+            <h2>Welcome to YOLOfi</h2>
+            <p>A fully onchain central limit order book (CLOB) DEX</p>
+            <p>Connect your wallet to start trading</p>
+            <WalletButton />
+          </div>
+        )}
+      </main>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+      <footer className="footer">
+        <p>YOLOfi - Hack in Hills '26 | Fully Onchain CLOB DEX</p>
+      </footer>
+    </div>
   )
 }
 
