@@ -18,8 +18,10 @@ interface IOrderBook {
         uint256 price;
         uint256 amount;
         uint256 filled;
-        uint64 prev;
-        uint64 next;
+        uint64 prev; // For price level FIFO
+        uint64 next; // For price level FIFO
+        uint64 userPrev; // For user's order list
+        uint64 userNext; // For user's order list
     }
 
     struct PriceLevel {
