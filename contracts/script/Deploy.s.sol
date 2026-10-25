@@ -59,42 +59,6 @@ contract Deploy is Script {
 
         console.log("Demo orders placed");
 
-        // Write deployment info to file
-        string memory chainIdStr = vm.toString(block.chainid);
-        string memory filename = string(abi.encodePacked(vm.projectRoot(), "/deployments/", chainIdStr, ".json"));
-        string memory tYBTCStr = vm.toString(address(tYBTC));
-        string memory tUSDCStr = vm.toString(address(tUSDC));
-        string memory bookStr = vm.toString(address(book));
-        string memory deployerStr = vm.toString(deployer);
-        vm.writeFile(
-            filename,
-            string(
-                abi.encodePacked(
-                    '{"chainId":',
-                    chainIdStr,
-                    ',"tYBTC":"',
-                    tYBTCStr,
-                    '","tUSDC":"',
-                    tUSDCStr,
-                    ',"OrderBook":"',
-                    bookStr,
-                    '","tickSize":',
-                    vm.toString(TICK_SIZE),
-                    ',"lotSize":',
-                    vm.toString(LOT_SIZE),
-                    ',"minOrderSize":',
-                    vm.toString(MIN_ORDER_SIZE),
-                    ',"takerFeeBps":',
-                    vm.toString(TAKER_FEE_BPS),
-                    ',"deployer":"',
-                    deployerStr,
-                    '"}'
-                )
-            )
-        );
-
-        console.log("Deployment saved to ", filename);
-
         vm.stopBroadcast();
     }
 }

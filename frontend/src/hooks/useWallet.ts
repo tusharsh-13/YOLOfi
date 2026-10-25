@@ -157,6 +157,9 @@ export function useWallet() {
     }
   }, [])
 
+  const targetChains = [anvil, baseSepolia] as const
+  const isTargetChain = state.chainId !== null && targetChains.some(chain => chain.id === state.chainId)
+
   return {
     account: state.account,
     chainId: state.chainId,
@@ -166,7 +169,7 @@ export function useWallet() {
     connect,
     disconnect,
     switchChain,
-    targetChains: [anvil, baseSepolia] as const,
-    isWrongChain: state.chainId !== null && !([anvil.id, baseSepolia.id] as const).includes(state.chainId as 31337 | 84532),
+    targetChains,
+    isWrongChain: state.isConnected && !isTargetChain,
   }
 }

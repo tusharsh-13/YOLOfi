@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
+import { useWallet } from '../hooks/useWallet'
 import { useBook } from '../hooks/useBook'
 import { formatBase, formatQuote, formatPrice } from '../lib/format'
 import './OrderBookView.css'
@@ -8,17 +9,15 @@ interface OrderBookViewProps {
 }
 
 export function OrderBookView({ onPriceClick }: OrderBookViewProps) {
-  const { bids, asks, spread, loading, error, refetch } = useBook(31337)
-  const [maxVolume, setMaxVolume] = useState<bigint>(0n)
+  const { chainId } = useWallet()
+  const { bids, asks, spread, loading, error, refetch } = useBook(chainId ?? 31337)
 
-  // Calculate max volume for depth bars (must be before early returns)
-  useMemo(() => {
+  const maxVolume = useMemo(() => {
     const maxBid = bids.reduce((max, bid) => bid.total > max ? bid.total : max, 0n)
     const maxAsk = asks.reduce((max, ask) => ask.total > max ? ask.total : max, 0n)
-    setMaxVolume(maxBid > maxAsk ? maxBid : maxAsk)
+    return maxBid > maxAsk ? maxBid : maxAsk
   }, [bids, asks])
 
-  // Calculate cumulative volumes for depth chart (must be before early returns)
   const bidsWithCumulative = useMemo(() => {
     let cumulative = 0n
     return bids.map(bid => {
@@ -69,11 +68,11 @@ export function OrderBookView({ onPriceClick }: OrderBookViewProps) {
 
       <div className="asks">
         {asksWithCumulative.slice().reverse().map((ask, index) => (
-          <div 
-            key={index}
+          <div
+            key={`${ask.price.toString()}-${index}`}
             className="level ask"
             onClick={() => onPriceClick?.(ask.price, 1)}
-            style={{ '--volume-ratio': getVolumeRatio(ask.total, maxVolume) } as React.CSSProperties }
+            style={{ '--volume-ratio': `${getVolumeRatio(ask.total, maxVolume)}%` } as React.CSSProperties }
           >
             <span className="price">{formatPrice(ask.price)}</span>
             <span className="volume">{formatQuote(ask.total)}</span>
@@ -87,27 +86,21 @@ export function OrderBookView({ onPriceClick }: OrderBookViewProps) {
 
       <div className="spread-row">
         <div className="spread-info">
-          <span className="best-ask">
-            {spread.bestAsk ? formatPrice(spread.bestAsk) : '—'}
-          </span>
+          <span className="best-ask">{spread.bestAsk ? formatPrice(spread.bestAsk) : '—'}</span>
           <span className="spread-value">
-            {spread.bestBid && spread.bestAsk 
-              ? formatPrice((spread.bestAsk - spread.bestBid) * 10000n / spread.bestBid) + ' bps'
-              : '—'}
+            {spread.bestBid && spread.bestAsk ? `${formatPrice((spread.bestAsk - spread.bestBid) * 10000n / spread.bestBid)} bps` : '—'}
           </span>
-          <span className="best-bid">
-            {spread.bestBid ? formatPrice(spread.bestBid) : '—'}
-          </span>
+          <span className="best-bid">{spread.bestBid ? formatPrice(spread.bestBid) : '—'}</span>
         </div>
       </div>
 
       <div className="bids">
         {bidsWithCumulative.map((bid, index) => (
-          <div 
-            key={index}
+          <div
+            key={`${bid.price.toString()}-${index}`}
             className="level bid"
             onClick={() => onPriceClick?.(bid.price, 0)}
-            style={{ '--volume-ratio': getVolumeRatio(bid.total, maxVolume) } as React.CSSProperties }
+            style={{ '--volume-ratio': `${getVolumeRatio(bid.total, maxVolume)}%` } as React.CSSProperties }
           >
             <span className="cumulative">{formatBase(bid.cumulative)}</span>
             <div className="depth-bar">

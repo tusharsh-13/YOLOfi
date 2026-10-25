@@ -1,24 +1,21 @@
+/* TradeFeed – dark theme */
 .trade-feed {
-  background: #fafafa;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
+  background: var(--surface-container-low);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
   overflow: hidden;
+  min-height: 280px;
 }
-
-.trade-feed.loading {
-  min-height: 300px;
-}
+.trade-feed.loading { min-height: 300px; }
 
 .trade-feed .skeleton {
-  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+  background: linear-gradient(90deg, var(--surface-container) 25%, var(--surface-container-high) 50%, var(--surface-container) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   border-radius: 4px;
 }
-
-.trade-feed .trade-row.skeleton {
-  height: 40px;
-}
+.trade-feed .trade-row.skeleton { height: 40px; }
 
 @keyframes shimmer {
   0% { background-position: 200% 0; }
@@ -28,13 +25,14 @@
 .trade-feed.error {
   padding: 24px;
   text-align: center;
-  color: #dc2626;
+  color: var(--error);
+  font-size: 14px;
 }
-
 .trade-feed.empty {
   padding: 48px;
   text-align: center;
-  color: #6b7280;
+  color: var(--on-surface-variant);
+  font-size: 14px;
 }
 
 .trade-feed-header {
@@ -42,116 +40,74 @@
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  background: #f3f4f6;
-  border-bottom: 1px solid #e5e7eb;
+  background: var(--surface-container-high);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
 }
-
 .trade-feed-header h3 {
   margin: 0;
   font-size: 14px;
-  font-weight: 600;
-  color: #111827;
+  font-weight: 700;
+  color: var(--on-surface);
 }
 
-.filters {
-  display: flex;
-  gap: 8px;
-}
-
+.filters { display: flex; gap: 6px; }
 .filters button {
   padding: 4px 10px;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  background: white;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 6px;
+  background: var(--surface-container);
+  color: var(--on-surface-variant);
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
 }
-
-.filters button:hover {
-  background: #f3f4f6;
-}
-
+.filters button:hover { background: var(--surface-container-high); color: var(--on-surface); }
 .filters button.active {
-  background: #3b82f6;
-  border-color: #3b82f6;
-  color: white;
+  background: var(--primary-container);
+  border-color: transparent;
+  color: var(--on-primary-container);
 }
 
-.trades-list {
-  max-height: 400px;
-  overflow-y: auto;
-}
+.trades-list { max-height: 400px; overflow-y: auto; }
 
 .trade-row {
   display: grid;
   grid-template-columns: 80px 50px 90px 80px 70px 60px;
   gap: 8px;
   padding: 8px 16px;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  font-family: var(--font-mono);
   font-size: 12px;
-  font-family: 'SF Mono', 'Fira Code', monospace;
   align-items: center;
+  transition: background 0.15s;
 }
+.trade-row:last-child { border-bottom: none; }
+.trade-row:hover { background: rgba(255,255,255,0.02); }
 
-.trade-row:last-child {
-  border-bottom: none;
-}
-
-.trade-row:hover {
-  background: #f9fafb;
-}
-
-.trade-time {
-  color: #6b7280;
-  font-size: 11px;
-}
+.trade-time { color: var(--on-surface-variant); font-size: 11px; }
 
 .side-badge {
   display: inline-block;
   padding: 2px 6px;
   border-radius: 3px;
   font-size: 9px;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
-
 .side-badge.buy,
-.side-badge.taker {
-  background: #dcfce7;
-  color: #166534;
-}
-
+.side-badge.taker { background: rgba(0,227,253,0.12); color: var(--secondary-container); }
 .side-badge.sell,
-.side-badge.maker {
-  background: #fee2e2;
-  color: #991b1b;
-}
+.side-badge.maker { background: rgba(255,180,171,0.12); color: var(--error); }
 
-.trade-price {
-  font-family: monospace;
-  font-weight: 500;
-  color: #111827;
-}
-
-.trade-amount {
-  font-family: monospace;
-  color: #374151;
-}
-
-.trade-fee {
-  font-family: monospace;
-  font-size: 11px;
-  color: #6b7280;
-}
+.trade-price { font-weight: 600; color: var(--on-surface); }
+.trade-amount { color: var(--on-surface-variant); }
+.trade-fee { font-size: 11px; color: var(--on-surface-variant); }
 
 .trade-hash .tx-link {
-  color: #3b82f6;
+  color: var(--secondary);
   font-size: 11px;
-  text-decoration: none;
+  transition: color 0.2s;
 }
-
-.trade-hash .tx-link:hover {
-  text-decoration: underline;
-}
+.trade-hash .tx-link:hover { color: var(--secondary-container); }

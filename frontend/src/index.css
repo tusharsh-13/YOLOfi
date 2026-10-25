@@ -1,111 +1,165 @@
+/* =========================================
+   YOLOfi Design System – Global CSS Tokens
+   Dark-mode, onchain DEX aesthetic
+   ========================================= */
+
+/* Reset */
+*, *::before, *::after { box-sizing: border-box; }
+
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  /* Brand Color Tokens */
+  --background:              #FFF8EE;
+  --surface:                 #FFF8EE;
+  --surface-container-lowest:#FBF4E8;
+  --surface-container-low:   #FFFDF8;
+  --surface-container:       #FFFFFF;
+  --surface-container-high:  #F5EDE0;
+  --surface-container-highest:#EADFCB;
+  --surface-variant:         #F3E9DA;
+  --surface-bright:          #FFFFFF;
+  --surface-dim:             #F5EDE0;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  --on-surface:              #1A1033;
+  --on-surface-variant:      #6B628A;
+  --on-background:           #1A1033;
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  --primary:                 #7E4AE8;
+  --primary-container:       #7E4AE8;
+  --on-primary:              #FFFFFF;
+  --on-primary-container:    #FFFFFF;
+  --primary-fixed:           #e9ddff;
+  --primary-fixed-dim:       #cfbdff;
+  --on-primary-fixed:        #22005d;
+  --on-primary-fixed-variant:#530dc6;
+  --inverse-primary:         #cfbdff;
 
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
+  --secondary:               #0099CC;
+  --secondary-container:     #00B37A;
+  --on-secondary:            #FFFFFF;
+  --on-secondary-container:  #FFFFFF;
+  --secondary-fixed:         #9cf0ff;
+  --secondary-fixed-dim:     #00daf3;
+  --on-secondary-fixed:      #001f24;
+  --on-secondary-fixed-variant:#004f58;
+
+  --tertiary:                #E81A7D;
+  --tertiary-container:      #E81A7D;
+  --on-tertiary:             #FFFFFF;
+  --on-tertiary-container:   #FFFFFF;
+  --tertiary-fixed:          #ffd9e3;
+  --tertiary-fixed-dim:      #ffb0c9;
+  --on-tertiary-fixed:       #3e001e;
+  --on-tertiary-fixed-variant:#8e004c;
+
+  --error:                   #E5365B;
+  --error-container:         #FDECEF;
+  --on-error:                #FFFFFF;
+  --on-error-container:      #690005;
+
+  --outline:                 #C9BDB0;
+  --outline-variant:         #EADFCB;
+  --inverse-surface:         #e4dfff;
+  --inverse-on-surface:      #FFF8EE;
+
+  /* Typography */
+  --font-editorial:   'Instrument Serif', Georgia, serif;
+  --font-sans:        Inter, system-ui, sans-serif;
+  --font-mono:        'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Spacing */
+  --space-xs:   4px;
+  --space-sm:   8px;
+  --space-md:   16px;
+  --space-lg:   24px;
+  --space-xl:   40px;
+
+  /* Radius */
+  --radius-sm:  8px;
+  --radius-md:  16px;
+  --radius-lg:  24px;
+  --radius-xl:  32px;
+  --radius-full: 9999px;
+
+  /* Trading-specific semantic colors (mapped to brand tokens) */
+  --bid-color:    var(--secondary-container);
+  --bid-bg:       rgba(0, 179, 122, 0.12);
+  --ask-color:    var(--error);
+  --ask-bg:       rgba(229, 54, 91, 0.12);
+  --success-color: var(--secondary-container);
+  --warning-color: var(--tertiary);
+  --danger-color:  var(--error);
+  --accent-glow:  rgba(126, 74, 232, 0.22);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
 }
 
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
+html, body, #root {
+  min-height: 100%;
+  height: 100%;
 }
 
 body {
   margin: 0;
+  font-family: var(--font-sans);
+  background-color: var(--background);
+  color: var(--on-surface);
+  line-height: 1.5;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior: none;
 }
 
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
+/* Selection */
+::selection {
+  background: var(--primary-container);
+  color: var(--on-primary-container);
 }
 
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-p {
-  margin: 0;
+/* Hide scrollbar but keep scrollable */
+::-webkit-scrollbar { display: none; }
+* { scrollbar-width: none; }
+
+/* Utilities */
+button, input, select, textarea { font: inherit; }
+button { border: none; cursor: pointer; }
+a { text-decoration: none; color: inherit; }
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  vertical-align: middle;
+  line-height: 1;
+  user-select: none;
 }
 
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
+/* Brand gradient utility */
+.brand-gradient-text {
+  background: linear-gradient(135deg, #8B5CFF 0%, #FF2E93 50%, #FF9A3D 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+.font-editorial {
+  font-family: var(--font-editorial);
+}
+
+/* Animate ping */
+@keyframes ping {
+  75%, 100% { transform: scale(2); opacity: 0; }
+}
+.animate-ping {
+  animation: ping 1.5s cubic-bezier(0,0,0.2,1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4,0,0.6,1) infinite;
 }
