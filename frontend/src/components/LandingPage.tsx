@@ -3,10 +3,12 @@ import './LandingPage.css'
 
 interface LandingPageProps {
   onLaunchApp: () => void
+  onLaunchDemo?: () => void
 }
 
-export function LandingPage({ onLaunchApp }: LandingPageProps) {
+export function LandingPage({ onLaunchApp, onLaunchDemo }: LandingPageProps) {
   const [openFaq, setOpenFaq] = useState<number | null>(null)
+  const launchDemo = onLaunchDemo || onLaunchApp
 
   return (
     <div className="landing-shell">
@@ -33,8 +35,8 @@ export function LandingPage({ onLaunchApp }: LandingPageProps) {
               </span>
               <span className="network-pill-label">Base Sepolia</span>
             </div>
-            <button className="btn-ghost" onClick={onLaunchApp}>
-              Connect Wallet
+            <button className="btn-demo-header" onClick={launchDemo}>
+              ⚡ Interactive Demo
             </button>
             <button className="btn-primary" onClick={onLaunchApp}>
               Launch App
@@ -75,14 +77,14 @@ export function LandingPage({ onLaunchApp }: LandingPageProps) {
               </p>
 
               <div className="hero-ctas">
-                <button className="btn-hero-primary" onClick={onLaunchApp}>
-                  Launch App
+                <button className="btn-hero-primary" onClick={launchDemo}>
+                  ⚡ Try Interactive Demo
                   <span className="material-symbols-outlined btn-icon">arrow_forward</span>
                 </button>
-                <a href="#how-it-works" className="btn-hero-secondary">
+                <button className="btn-hero-secondary" onClick={onLaunchApp}>
                   <span className="material-symbols-outlined btn-icon-left cyan">play_circle</span>
-                  See how it works
-                </a>
+                  Connect Wallet
+                </button>
               </div>
 
               <div className="trust-strip">

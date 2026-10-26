@@ -122,6 +122,28 @@
 }
 
 /* Buttons */
+.btn-demo-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border-radius: var(--radius-full);
+  background: rgba(126, 74, 232, 0.18);
+  border: 1px solid rgba(126, 74, 232, 0.5);
+  color: #cfbdff;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-demo-header:hover {
+  background: rgba(126, 74, 232, 0.35);
+  color: #FFFFFF;
+  box-shadow: 0 0 16px rgba(126, 74, 232, 0.4);
+  transform: translateY(-1px);
+}
+
 .btn-ghost {
   display: inline-flex;
   align-items: center;

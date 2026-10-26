@@ -22,16 +22,15 @@ export function parseQuote(amount: string, decimals = 6): bigint {
 }
 
 export function formatPrice(price: bigint): string {
-  // price is quote units per 1e18 base
-  // Display as price / 1e18 * 1e6 (quote decimals) for readability
-  const display = (price * 10n ** 6n) / PRICE_SCALE
-  return formatQuote(display, 6)
+  if (price === 0n) return '0.00'
+  const val = Number(price) / 1e6
+  return val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 })
 }
 
 export function parsePrice(priceStr: string): bigint {
-  // Parse display price back to contract price units
-  const parsed = parseQuote(priceStr, 6)
-  return (parsed * PRICE_SCALE) / 10n ** 6n
+  const clean = priceStr.replace(/,/g, '').trim()
+  if (!clean || isNaN(Number(clean))) return 0n
+  return parseUnits(clean, 6)
 }
 
 export function formatAmount(amount: bigint, decimals: number): string {

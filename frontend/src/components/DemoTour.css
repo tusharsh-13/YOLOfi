@@ -1,0 +1,402 @@
+/* ========================================================
+   DemoTour.css – Interactive Walkthrough Stepper Styling
+   Glassmorphic DeFi aesthetic with vibrant gradients
+   ======================================================== */
+
+.demo-tour-banner {
+  background: linear-gradient(135deg, rgba(30, 20, 60, 0.95), rgba(18, 12, 38, 0.98));
+  border: 1px solid rgba(126, 74, 232, 0.35);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+  padding: 20px 24px;
+  margin: 16px 28px 24px 28px;
+  color: #FFFFFF;
+  position: relative;
+  overflow: hidden;
+}
+
+.demo-tour-banner::before {
+  content: '';
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 250px;
+  height: 250px;
+  background: radial-gradient(circle, rgba(126, 74, 232, 0.25) 0%, rgba(232, 26, 125, 0.1) 50%, transparent 70%);
+  pointer-events: none;
+  filter: blur(40px);
+}
+
+.demo-tour-banner.minimized {
+  padding: 12px 24px;
+  background: rgba(30, 20, 60, 0.8);
+}
+
+.minimized-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.minimized-text {
+  font-size: 13px;
+  color: #B0A8D0;
+}
+
+.btn-return-demo {
+  background: linear-gradient(135deg, #7E4AE8, #E81A7D);
+  border: none;
+  color: #FFFFFF;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 18px;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-return-demo:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(126, 74, 232, 0.4);
+}
+
+/* Header */
+.demo-tour-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.demo-tour-title-group {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.demo-live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 179, 122, 0.15);
+  border: 1px solid rgba(0, 179, 122, 0.4);
+  color: #00E599;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 4px 12px;
+  border-radius: 9999px;
+}
+
+.live-dot {
+  width: 7px;
+  height: 7px;
+  background: #00E599;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #00E599;
+  animation: pulse-dot 1.8s infinite;
+}
+
+@keyframes pulse-dot {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  50% { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(0.95); opacity: 0.8; }
+}
+
+.demo-hint-text {
+  font-size: 13px;
+  color: #B8B0D6;
+}
+
+.demo-tour-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.persona-switcher {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+  padding: 3px 6px;
+  gap: 4px;
+}
+
+.persona-label {
+  font-size: 11px;
+  color: #8E82B8;
+  padding: 0 6px;
+  font-family: var(--font-mono, monospace);
+  text-transform: uppercase;
+}
+
+.persona-btn {
+  background: none;
+  border: none;
+  color: #C0B7E0;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.persona-btn:hover {
+  color: #FFFFFF;
+}
+
+.persona-btn.active {
+  background: #7E4AE8;
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(126, 74, 232, 0.5);
+}
+
+.demo-reset-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #B8B0D6;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.demo-reset-btn:hover {
+  background: rgba(229, 54, 91, 0.2);
+  border-color: rgba(229, 54, 91, 0.4);
+  color: #FF708F;
+}
+
+/* Stepper Tabs */
+.demo-stepper {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.stepper-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 10px 14px;
+  color: #8E82B8;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.stepper-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(126, 74, 232, 0.3);
+  color: #D6D0F0;
+}
+
+.stepper-item.active {
+  background: rgba(126, 74, 232, 0.18);
+  border-color: #7E4AE8;
+  box-shadow: 0 0 16px rgba(126, 74, 232, 0.25);
+  color: #FFFFFF;
+}
+
+.stepper-item.done {
+  border-color: rgba(0, 179, 122, 0.3);
+}
+
+.stepper-circle {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.08);
+  color: #B8B0D6;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.stepper-item.active .stepper-circle {
+  background: #7E4AE8;
+  color: #FFFFFF;
+  box-shadow: 0 0 10px #7E4AE8;
+}
+
+.stepper-item.done .stepper-circle {
+  background: #00B37A;
+  color: #FFFFFF;
+}
+
+.stepper-label-group {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.stepper-num {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #8E82B8;
+}
+
+.stepper-item.active .stepper-num {
+  color: #cfbdff;
+}
+
+.stepper-title {
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Active Step Card */
+.demo-step-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 18px 22px;
+  flex-wrap: wrap;
+}
+
+.step-card-content {
+  flex: 1;
+  min-width: 300px;
+}
+
+.step-card-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--font-mono, monospace);
+  color: #7E4AE8;
+  background: rgba(126, 74, 232, 0.15);
+  border: 1px solid rgba(126, 74, 232, 0.3);
+  padding: 2px 8px;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.step-card-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin: 0 0 6px 0;
+}
+
+.step-card-summary {
+  font-size: 13px;
+  color: #C8C0E8;
+  margin: 0 0 10px 0;
+  line-height: 1.4;
+}
+
+.step-card-detail {
+  font-size: 12px;
+  color: #9D92C4;
+  line-height: 1.5;
+  background: rgba(255, 255, 255, 0.03);
+  border-left: 2px solid #7E4AE8;
+  padding: 8px 12px;
+  border-radius: 0 8px 8px 0;
+}
+
+.step-card-detail strong {
+  color: #E2DCFF;
+}
+
+.step-card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: stretch;
+  min-width: 260px;
+}
+
+.btn-step-action {
+  background: linear-gradient(135deg, #7E4AE8, #E81A7D);
+  border: none;
+  color: #FFFFFF;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 12px 20px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 16px rgba(126, 74, 232, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-step-action:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(126, 74, 232, 0.5);
+  filter: brightness(1.1);
+}
+
+.btn-step-action:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.step-nav-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-step-nav {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #D6D0F0;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-step-nav:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  color: #FFFFFF;
+}
+
+.btn-step-nav:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+@media (max-width: 900px) {
+  .demo-stepper {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .demo-tour-banner {
+    margin: 12px;
+  }
+}

@@ -32,15 +32,50 @@
   100% { background-position: -200% 0; }
 }
 
+.order-book-header-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  background: var(--surface-container);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.book-title {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--on-surface);
+}
+
+.book-live-tag {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: rgba(0, 179, 122, 0.15);
+  color: #00E599;
+  border: 1px solid rgba(0, 179, 122, 0.3);
+}
+
+.empty-book-side {
+  padding: 16px;
+  text-align: center;
+  color: var(--on-surface-variant);
+  font-size: 12px;
+  font-style: italic;
+}
+
 .book-header {
   display: grid;
-  grid-template-columns: 1fr 80px 1fr;
-  padding: 12px 16px;
+  grid-template-columns: 1fr 1fr 1fr;
+  padding: 10px 16px;
   background: var(--surface-container-high);
   border-bottom: 1px solid rgba(255,255,255,0.05);
   font-family: var(--font-mono);
   font-size: 11px;
-  letter-spacing: 0.10em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--on-surface-variant);
 }
@@ -48,25 +83,30 @@
 .column-header {
   display: flex;
   align-items: center;
-  justify-content: center;
 }
 .column-header.ask { justify-content: flex-start; color: var(--error); }
+.column-header.size { justify-content: center; }
+.column-header.total { justify-content: flex-end; }
 .column-header.bid { justify-content: flex-end; color: var(--secondary-container); }
 .column-header.spread { justify-content: center; color: var(--on-surface-variant); }
 
-.asks, .bids { padding: 10px 14px; }
+.asks, .bids { padding: 8px 12px; }
 
 .level {
   display: grid;
-  grid-template-columns: 1fr 1fr 1.3fr 1fr;
-  gap: 6px;
+  grid-template-columns: 1.2fr 1fr 1fr 1fr;
+  gap: 8px;
   align-items: center;
-  padding: 6px 8px;
+  padding: 6px 10px;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: background 0.15s;
+  transition: all 0.15s ease;
+  position: relative;
 }
-.level:hover { background: rgba(255,255,255,0.04); }
+.level:hover {
+  background: rgba(255, 255, 255, 0.07);
+  transform: translateX(2px);
+}
 
 .level.ask .price,
 .level.ask .volume { color: var(--error); }

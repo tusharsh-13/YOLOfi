@@ -3,18 +3,25 @@ import { useWallet } from '../hooks/useWallet'
 import { formatBase, formatQuote, parseBase, parseQuote } from '../lib/format'
 import './Faucet.css'
 
+import { useDemo } from '../context/DemoContext'
+
 export function Faucet() {
+  const { isDemoMode, balances: demoBalances, faucetMint } = useDemo()
   const { account, chainId } = useWallet()
   const [minting, setMinting] = useState<'tYBTC' | 'tUSDC' | null>(null)
   const [customAmount, setCustomAmount] = useState('')
   const [customToken, setCustomToken] = useState<'tYBTC' | 'tUSDC'>('tYBTC')
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
-  const [balances, setBalances] = useState<{ tYBTC: bigint; tUSDC: bigint }>({ tYBTC: 0n, tUSDC: 0n })
+  const [web3Balances, setWeb3Balances] = useState<{ tYBTC: bigint; tUSDC: bigint }>({ tYBTC: 0n, tUSDC: 0n })
   const [loadingBalances, setLoadingBalances] = useState(false)
 
+  const balances = isDemoMode
+    ? { tYBTC: demoBalances.walletBase, tUSDC: demoBalances.walletQuote }
+    : web3Balances
+
   const fetchBalances = async () => {
-    if (!account || !chainId) return
+    if (isDemoMode || !account || !chainId) return
     setLoadingBalances(true)
     try {
       const { erc20BalanceOf } = await import('../lib/contracts')
@@ -22,7 +29,7 @@ export function Faucet() {
         erc20BalanceOf(chainId, 'tYBTC', account as unknown as `0x${string}`),
         erc20BalanceOf(chainId, 'tUSDC', account as unknown as `0x${string}`),
       ])
-      setBalances({ tYBTC: tybtc, tUSDC: tusdc })
+      setWeb3Balances({ tYBTC: tybtc, tUSDC: tusdc })
     } catch {
       // ignore
     } finally {
@@ -32,20 +39,24 @@ export function Faucet() {
 
   useEffect(() => {
     fetchBalances()
-  }, [account, chainId])
+  }, [account, chainId, isDemoMode])
 
   const handleFaucet = async (token: 'tYBTC' | 'tUSDC') => {
-    if (!account || !chainId) return
     setError(null)
     setSuccess(null)
     setMinting(token)
 
     try {
-      const { erc20Faucet } = await import('../lib/contracts')
-      await erc20Faucet(chainId, token)
+      if (isDemoMode) {
+        await faucetMint(token)
+      } else {
+        if (!account || !chainId) throw new Error('Connect wallet first')
+        const { erc20Faucet } = await import('../lib/contracts')
+        await erc20Faucet(chainId, token)
+        fetchBalances()
+      }
       const name = token === 'tYBTC' ? 'tYBTC' : 'tUSDC'
       setSuccess(`Minted faucet ${name}`)
-      fetchBalances()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Faucet failed')
     } finally {
@@ -54,7 +65,7 @@ export function Faucet() {
   }
 
   const handleCustomMint = async () => {
-    if (!account || !chainId || !customAmount) return
+    if (!customAmount) return
     const amount = customToken === 'tYBTC' ? parseBase(customAmount) : parseQuote(customAmount)
     if (amount <= 0n) { setError('Amount must be positive'); return }
 
@@ -63,12 +74,17 @@ export function Faucet() {
     setMinting(customToken)
 
     try {
-      const { erc20Mint } = await import('../lib/contracts')
-      await erc20Mint(chainId, customToken, account as unknown as `0x${string}`, amount)
+      if (isDemoMode) {
+        await faucetMint(customToken, amount)
+      } else {
+        if (!account || !chainId) throw new Error('Connect wallet first')
+        const { erc20Mint } = await import('../lib/contracts')
+        await erc20Mint(chainId, customToken, account as unknown as `0x${string}`, amount)
+        fetchBalances()
+      }
       const name = customToken === 'tYBTC' ? 'tYBTC' : 'tUSDC'
       setSuccess(`Minted ${customToken === 'tYBTC' ? formatBase(amount) : formatQuote(amount)} ${name}`)
       setCustomAmount('')
-      fetchBalances()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Mint failed')
     } finally {

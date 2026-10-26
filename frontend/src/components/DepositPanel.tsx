@@ -4,7 +4,7 @@ import { useBalances } from '../hooks/useBalances'
 import { deposit, withdraw, erc20Approve, erc20BalanceOf } from '../lib/contracts'
 import { formatBase, formatQuote, parseBase, parseQuote } from '../lib/format'
 import { CONTRACT_ADDRESSES } from '../lib/contracts'
-import './DepositPanel.css'
+import { useDemo } from '../context/DemoContext'
 
 const TOKENS = [
   { symbol: 'tYBTC', key: 'tYBTC', formatFn: formatBase, parseFn: parseBase },
@@ -12,8 +12,20 @@ const TOKENS = [
 ] as const
 
 export function DepositPanel() {
+  const { isDemoMode, balances: demoBalances, depositToken, withdrawToken, approveToken } = useDemo()
   const { account, chainId } = useWallet()
-  const { baseFree, baseLocked, quoteFree, quoteLocked, walletBase, walletQuote, baseAllowance, quoteAllowance, refetch } = useBalances(chainId || 31337, account as `0x${string}` | null)
+  const web3Balances = useBalances(chainId || 31337, account as `0x${string}` | null)
+
+  const balances = isDemoMode ? demoBalances : web3Balances
+  const baseFree = balances.baseFree
+  const baseLocked = balances.baseLocked
+  const quoteFree = balances.quoteFree
+  const quoteLocked = balances.quoteLocked
+  const walletBase = balances.walletBase
+  const walletQuote = balances.walletQuote
+  const baseAllowance = balances.baseAllowance
+  const quoteAllowance = balances.quoteAllowance
+
   const [activeToken, setActiveToken] = useState<'tYBTC' | 'tUSDC'>('tYBTC')
   const [depositAmount, setDepositAmount] = useState('')
   const [withdrawAmount, setWithdrawAmount] = useState('')
@@ -32,34 +44,44 @@ export function DepositPanel() {
   const allowance = activeToken === 'tYBTC' ? baseAllowance : quoteAllowance
 
   const handleDeposit = async () => {
-    if (!account || !chainId) return
     const amount = token.parseFn(depositAmount)
     if (amount <= 0n) { setError('Amount must be positive'); return }
+    if (amount > walletBalance) { setError(`Insufficient ${token.symbol} wallet balance`); return }
 
     setError(null)
     setSuccess(null)
     setDepositing(true)
 
     try {
-      if (allowance < amount) {
-        setApproving(token.key)
-        await erc20Approve(chainId, token.key, orderBookAddress, amount)
-        setApproving(null)
+      if (isDemoMode) {
+        if (allowance < amount) {
+          setApproving(token.key)
+          await approveToken(token.key, amount)
+          setApproving(null)
+        }
+        await depositToken(token.key, amount)
+      } else {
+        if (!account || !chainId) throw new Error('Connect wallet first')
+        if (allowance < amount) {
+          setApproving(token.key)
+          await erc20Approve(chainId, token.key, orderBookAddress, amount)
+          setApproving(null)
+        }
+        await deposit(chainId, token.key, amount)
+        web3Balances.refetch()
       }
 
-      await deposit(chainId, token.key, amount)
       setSuccess(`Deposited ${token.formatFn(amount)} ${token.symbol}`)
       setDepositAmount('')
-      refetch()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Deposit failed')
     } finally {
       setDepositing(false)
+      setApproving(null)
     }
   }
 
   const handleWithdraw = async () => {
-    if (!account || !chainId) return
     const amount = token.parseFn(withdrawAmount)
     if (amount <= 0n) { setError('Amount must be positive'); return }
     if (amount > freeBalance) { setError('Insufficient free balance'); return }
@@ -69,10 +91,16 @@ export function DepositPanel() {
     setWithdrawing(true)
 
     try {
-      await withdraw(chainId, token.key, amount)
+      if (isDemoMode) {
+        await withdrawToken(token.key, amount)
+      } else {
+        if (!account || !chainId) throw new Error('Connect wallet first')
+        await withdraw(chainId, token.key, amount)
+        web3Balances.refetch()
+      }
+
       setSuccess(`Withdrew ${token.formatFn(amount)} ${token.symbol}`)
       setWithdrawAmount('')
-      refetch()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Withdraw failed')
     } finally {
@@ -81,9 +109,13 @@ export function DepositPanel() {
   }
 
   const handleMaxDeposit = async () => {
-    if (!account || !chainId) return
-    const bal = await erc20BalanceOf(chainId, token.key, account as unknown as `0x${string}`)
-    setDepositAmount(token.formatFn(bal))
+    if (isDemoMode) {
+      setDepositAmount(token.formatFn(walletBalance))
+    } else {
+      if (!account || !chainId) return
+      const bal = await erc20BalanceOf(chainId, token.key, account as unknown as `0x${string}`)
+      setDepositAmount(token.formatFn(bal))
+    }
   }
 
   const handleMaxWithdraw = () => {

@@ -58,6 +58,51 @@
 
 .wallet-actions { display: flex; gap: 6px; }
 
+.wallet-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.demo-badge {
+  background: rgba(126, 74, 232, 0.2) !important;
+  color: #cfbdff !important;
+  border: 1px solid rgba(126, 74, 232, 0.4);
+}
+
+.switch-persona-btn {
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #FFFFFF;
+  background: #7E4AE8;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.switch-persona-btn:hover {
+  background: #905cf5;
+}
+
+.real-wallet-toggle-btn, .demo-toggle-btn {
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #B8B0D6;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.real-wallet-toggle-btn:hover, .demo-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #FFFFFF;
+}
+
 .switch-chain-btn,
 .disconnect-btn {
   padding: 6px 10px;

@@ -69,11 +69,40 @@
   color: var(--on-primary-container);
 }
 
+.trade-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.trade-counter-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: rgba(126, 74, 232, 0.2);
+  color: #cfbdff;
+  border-radius: 9999px;
+  padding: 1px 8px;
+  font-weight: 700;
+}
+
+.trades-header-row {
+  display: grid;
+  grid-template-columns: 1.2fr 1.2fr 1fr 1.8fr 1fr;
+  padding: 8px 16px;
+  background: var(--surface-container-high);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--on-surface-variant);
+  font-weight: 700;
+}
+
 .trades-list { max-height: 400px; overflow-y: auto; }
 
 .trade-row {
   display: grid;
-  grid-template-columns: 80px 50px 90px 80px 70px 60px;
+  grid-template-columns: 1.2fr 1.2fr 1fr 1.8fr 1fr;
   gap: 8px;
   padding: 8px 16px;
   border-bottom: 1px solid rgba(255,255,255,0.03);
@@ -83,31 +112,16 @@
   transition: background 0.15s;
 }
 .trade-row:last-child { border-bottom: none; }
-.trade-row:hover { background: rgba(255,255,255,0.02); }
+.trade-row:hover { background: rgba(255,255,255,0.04); }
+
+.trade-row.trade-mine {
+  background: rgba(126, 74, 232, 0.08);
+  border-left: 3px solid #7E4AE8;
+}
 
 .trade-time { color: var(--on-surface-variant); font-size: 11px; }
 
-.side-badge {
-  display: inline-block;
-  padding: 2px 6px;
-  border-radius: 3px;
-  font-size: 9px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-.side-badge.buy,
-.side-badge.taker { background: rgba(0,227,253,0.12); color: var(--secondary-container); }
-.side-badge.sell,
-.side-badge.maker { background: rgba(255,180,171,0.12); color: var(--error); }
-
-.trade-price { font-weight: 600; color: var(--on-surface); }
-.trade-amount { color: var(--on-surface-variant); }
+.trade-price { font-weight: 700; color: #00E599; }
+.trade-amount { color: var(--on-surface); font-weight: 500; }
 .trade-fee { font-size: 11px; color: var(--on-surface-variant); }
-
-.trade-hash .tx-link {
-  color: var(--secondary);
-  font-size: 11px;
-  transition: color 0.2s;
-}
-.trade-hash .tx-link:hover { color: var(--secondary-container); }
+.trade-parties { font-size: 11px; color: #B0A8D0; }

@@ -1,14 +1,20 @@
 import { useState, useEffect } from 'react'
 import { useWallet } from '../hooks/useWallet'
 import { useBalances } from '../hooks/useBalances'
+import { useDemo } from '../context/DemoContext'
 import { placeLimitOrder, getTakerFeeBps } from '../lib/contracts'
-import { calculateQuoteAmount, calculateFee, validateTickPrice, validateLotAmount, validateMinOrderSize } from '../lib/format'
+import { parsePrice, parseBase, calculateQuoteAmount, calculateFee, formatPrice, formatBase } from '../lib/format'
 import './OrderForm.css'
 
 export function OrderForm() {
+  const { isDemoMode, balances: demoBalances, placeOrder: demoPlaceOrder, prefillOrder, setPrefillOrder } = useDemo()
   const { account, chainId } = useWallet()
-  const { baseAllowance, quoteAllowance, refetch } = useBalances(chainId || 31337, account as `0x${string}` | null)
-  
+  const web3Balances = useBalances(chainId || 31337, account as `0x${string}` | null)
+
+  const balances = isDemoMode ? demoBalances : web3Balances
+  const baseFree = balances.baseFree
+  const quoteFree = balances.quoteFree
+
   const [side, setSide] = useState<'buy' | 'sell'>('buy')
   const [price, setPrice] = useState('')
   const [amount, setAmount] = useState('')
@@ -16,66 +22,65 @@ export function OrderForm() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
-  const [feeBps, setFeeBps] = useState<bigint>(0n)
+  const [feeBps, setFeeBps] = useState<bigint>(10n)
 
-  // Fetch contract params
+  // Listen to prefillOrder from DemoTour or OrderBookView
   useEffect(() => {
-    if (!chainId) return
+    if (prefillOrder) {
+      if (prefillOrder.side) setSide(prefillOrder.side)
+      if (prefillOrder.price) setPrice(prefillOrder.price)
+      if (prefillOrder.amount) setAmount(prefillOrder.amount)
+      setError(null)
+      setSuccess(null)
+      setPrefillOrder(null)
+    }
+  }, [prefillOrder, setPrefillOrder])
+
+  // Fetch contract fee params if connected to web3
+  useEffect(() => {
+    if (isDemoMode || !chainId) return
     const fetchParams = async () => {
-      const [fee] = await Promise.all([
-        getTakerFeeBps(chainId),
-      ])
-      setFeeBps(fee)
+      try {
+        const fee = await getTakerFeeBps(chainId)
+        setFeeBps(fee)
+      } catch {
+        // default 10 bps
+      }
     }
     fetchParams()
-  }, [chainId])
+  }, [chainId, isDemoMode])
+
+  // Estimates
+  const priceBigInt = price ? parsePrice(price) : 0n
+  const amountBigInt = amount ? parseBase(amount) : 0n
+  const estimatedNotional = (priceBigInt > 0n && amountBigInt > 0n) ? calculateQuoteAmount(amountBigInt, priceBigInt) : 0n
+  const estimatedFee = estimatedNotional > 0n ? calculateFee(estimatedNotional, feeBps) : 0n
+  const totalQuoteNeeded = estimatedNotional + estimatedFee
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!account || !chainId) return
-    
+
     const priceVal = parseFloat(price)
     const amountVal = parseFloat(amount)
-    
+
     if (!priceVal || !amountVal || priceVal <= 0 || amountVal <= 0) {
       setError('Price and amount must be positive numbers')
       return
     }
 
-    // Parse to contract units
-    const priceBigInt = BigInt(Math.round(priceVal * 1e18)) // price is quote units per 1e18 base
-    const amountBigInt = side === 'buy' 
-      ? BigInt(Math.round(amountVal * 1e6)) // quote amount in 6 decimals
-      : BigInt(Math.round(amountVal * 1e18)) // base amount in 18 decimals
-
-    // Validation
-    if (!validateTickPrice(priceBigInt)) {
-      setError('Price must be multiple of tick size')
-      return
-    }
-    if (!validateLotAmount(amountBigInt)) {
-      setError('Amount must be multiple of lot size')
-      return
-    }
-    if (!validateMinOrderSize(amountBigInt)) {
-      setError('Amount must be at least minimum order size')
+    if (amountBigInt < 100_000_000_000_000n) {
+      setError('Minimum order amount is 0.0001 tYBTC')
       return
     }
 
-    // Check allowance for buys (quote token)
-    if (side === 'buy') {
-      const quoteAmount = calculateQuoteAmount(amountBigInt, priceBigInt)
-      const fee = calculateFee(quoteAmount, feeBps)
-      const totalNeeded = quoteAmount + fee
-      if (quoteAllowance < totalNeeded) {
-        setError(`Insufficient USDC allowance. Need ${totalNeeded}, have ${quoteAllowance}`)
-        return
-      }
-    } else {
-      if (baseAllowance < amountBigInt) {
-        setError(`Insufficient tYBTC allowance. Need ${amountBigInt}, have ${baseAllowance}`)
-        return
-      }
+    if (side === 'buy' && quoteFree < totalQuoteNeeded) {
+      setError(`Insufficient free quote balance. Need $${formatPrice(totalQuoteNeeded)} USDC in internal ledger`)
+      return
+    }
+
+    if (side === 'sell' && baseFree < amountBigInt) {
+      setError(`Insufficient free base balance. Need ${formatBase(amountBigInt)} tYBTC in internal ledger`)
+      return
     }
 
     setError(null)
@@ -83,11 +88,25 @@ export function OrderForm() {
     setSubmitting(true)
 
     try {
-      const orderId = await placeLimitOrder(chainId, side === 'buy' ? 0 : 1, priceBigInt, amountBigInt, BigInt(maxFills), 0n)
-      setSuccess(`Order placed! Order ID: ${orderId}`)
+      if (isDemoMode) {
+        const orderId = await demoPlaceOrder(side, priceBigInt, amountBigInt, maxFills)
+        setSuccess(`Order #${orderId} processed! (Matched or placed on book)`)
+      } else {
+        if (!account || !chainId) throw new Error('Connect wallet first')
+        const orderId = await placeLimitOrder(
+          chainId,
+          side === 'buy' ? 0 : 1,
+          priceBigInt,
+          amountBigInt,
+          BigInt(maxFills),
+          0n
+        )
+        setSuccess(`Order placed! Order ID: ${orderId}`)
+        web3Balances.refetch()
+      }
+
       setPrice('')
       setAmount('')
-      refetch()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Order failed')
     } finally {
@@ -95,29 +114,12 @@ export function OrderForm() {
     }
   }
 
-  // Estimated cost/fee calculation
-  let estimatedQuote = 0n
-  let estimatedFee = 0n
-  let estimatedTotal = 0n
-  
-  if (price && amount) {
-    const priceVal = parseFloat(price)
-    const amountVal = parseFloat(amount)
-    if (priceVal > 0 && amountVal > 0) {
-      const priceBigInt = BigInt(Math.round(priceVal * 1e18))
-      const amountBigInt = side === 'buy' 
-        ? BigInt(Math.round(amountVal * 1e6))
-        : BigInt(Math.round(amountVal * 1e18))
-      
-      estimatedQuote = calculateQuoteAmount(amountBigInt, priceBigInt)
-      estimatedFee = calculateFee(estimatedQuote, feeBps)
-      estimatedTotal = estimatedQuote + estimatedFee
-    }
-  }
-
   return (
     <form className="order-form" onSubmit={handleSubmit}>
-      <h3>Place Limit Order</h3>
+      <div className="order-form-header">
+        <h3>Place Limit Order</h3>
+        <span className="order-form-type-badge">GTC · CLOB</span>
+      </div>
 
       {error && <div className="error-message">{error}</div>}
       {success && <div className="success-message">{success}</div>}
@@ -127,49 +129,57 @@ export function OrderForm() {
         <div className="side-toggle">
           <button
             type="button"
-            className={side === 'buy' ? 'active' : ''}
+            className={`btn-side btn-buy ${side === 'buy' ? 'active' : ''}`}
             onClick={() => setSide('buy')}
           >
-            Buy
+            Buy tYBTC
           </button>
           <button
             type="button"
-            className={side === 'sell' ? 'active' : ''}
+            className={`btn-side btn-sell ${side === 'sell' ? 'active' : ''}`}
             onClick={() => setSide('sell')}
           >
-            Sell
+            Sell tYBTC
           </button>
         </div>
       </div>
 
       <div className="form-group">
-        <label>Price (USDC per tYBTC)</label>
+        <div className="label-row">
+          <label>Price (USDC per tYBTC)</label>
+          <span className="helper-label">Tick: $0.01</span>
+        </div>
         <input
           type="number"
           value={price}
           onChange={e => setPrice(e.target.value)}
-          placeholder="e.g., 65000"
+          placeholder="e.g., 99500 or 101000"
           step="0.01"
           min="0.01"
           disabled={submitting}
+          required
         />
       </div>
 
       <div className="form-group">
-        <label>{side === 'buy' ? 'Amount (USDC)' : 'Amount (tYBTC)'}</label>
+        <div className="label-row">
+          <label>Amount (tYBTC)</label>
+          <span className="helper-label">Lot: 0.0001 BTC</span>
+        </div>
         <input
           type="number"
           value={amount}
           onChange={e => setAmount(e.target.value)}
-          placeholder={side === 'buy' ? 'e.g., 1000' : 'e.g., 0.01'}
-          step={side === 'buy' ? '0.01' : '0.0001'}
-          min="0"
+          placeholder="e.g., 0.25"
+          step="0.0001"
+          min="0.0001"
           disabled={submitting}
+          required
         />
       </div>
 
       <div className="form-group">
-        <label>Max Fills</label>
+        <label>Max Fills per Tx</label>
         <input
           type="number"
           value={maxFills}
@@ -181,41 +191,41 @@ export function OrderForm() {
       </div>
 
       <div className="estimation">
-        <h4>Estimation</h4>
+        <h4>Order Summary</h4>
         <div className="estimation-row">
-          <span>Estimated {side === 'buy' ? 'tYBTC' : 'USDC'} received:</span>
-          <span className="value">{side === 'buy' ? estimatedQuote - estimatedFee : estimatedQuote - estimatedFee}</span>
+          <span>Notional Value:</span>
+          <span className="value">${formatPrice(estimatedNotional)} USDC</span>
         </div>
         <div className="estimation-row">
-          <span>Estimated fee ({Number(feeBps) / 100}%):</span>
-          <span className="value">{estimatedFee}</span>
+          <span>Taker Fee (0.10% if match):</span>
+          <span className="value">${formatPrice(estimatedFee)} USDC</span>
         </div>
         <div className="estimation-row total">
-          <span>Total {side === 'buy' ? 'USDC' : 'tYBTC'} needed:</span>
-          <span className="value">{side === 'buy' ? estimatedTotal : estimatedTotal}</span>
+          <span>{side === 'buy' ? 'Total Lock / Cost:' : 'Base Required:'}</span>
+          <span className="value">
+            {side === 'buy'
+              ? `$${formatPrice(totalQuoteNeeded)} USDC`
+              : `${formatBase(amountBigInt)} tYBTC`}
+          </span>
         </div>
       </div>
 
       <div className="allowance-info">
-        {side === 'buy' ? (
-          <>
-            <span>USDC allowance:</span>
-            <span className={quoteAllowance >= estimatedTotal ? 'sufficient' : 'insufficient'}>
-              {quoteAllowance} / {estimatedTotal}
-            </span>
-          </>
-        ) : (
-          <>
-            <span>tYBTC allowance:</span>
-            <span className={baseAllowance >= BigInt(Math.round(parseFloat(amount) * 1e18)) ? 'sufficient' : 'insufficient'}>
-              {baseAllowance} / {BigInt(Math.round(parseFloat(amount) * 1e18))}
-            </span>
-          </>
-        )}
+        <span className="ledger-balance-hint">
+          {side === 'buy'
+            ? `Available Free Quote: $${formatPrice(quoteFree)} USDC`
+            : `Available Free Base: ${formatBase(baseFree)} tYBTC`}
+        </span>
       </div>
 
-      <button type="submit" className="submit-btn" disabled={submitting}>
-        {submitting ? 'Placing Order...' : `Place ${side.charAt(0).toUpperCase() + side.slice(1)} Order`}
+      <button
+        type="submit"
+        className={`submit-btn ${side === 'buy' ? 'submit-buy' : 'submit-sell'}`}
+        disabled={submitting}
+      >
+        {submitting
+          ? 'Processing Onchain...'
+          : `Submit Limit ${side.toUpperCase()} Order`}
       </button>
     </form>
   )
