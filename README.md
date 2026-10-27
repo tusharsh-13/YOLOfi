@@ -243,26 +243,6 @@ yolofi/
 │   └── flow.md               # Trade flow walkthrough
 └── README.md
 ```
-
-## Demo Video Checklist
-
-- [ ] Connect MetaMask to Anvil/Base Sepolia
-- [ ] Use Faucet to mint 10 tYBTC + 10,000 tUSDC
-- [ ] Deposit 5 tYBTC + 5,000 tUSDC to OrderBook
-- [ ] Place BUY order: 0.1 tYBTC @ 60,000 USDC
-- [ ] Place SELL order: 0.05 tYBTC @ 59,000 USDC (crosses)
-- [ ] Observe TradeExecuted event in TradeFeed
-- [ ] Show OrderBookView with updated bids/asks
-- [ ] Show MyOrders with partial fill
-  - Cancel remaining order
-  - Verify funds returned to free balance
-- [ ] Show TradeFeed with live updates
-- [ ] Demonstrate price improvement refund
-  - Place buy at 65,000, existing sell at 60,000
-  - Show buyer gets 60,000 price + refund of 5,000 difference
-
-## License
-
 MIT License - see [LICENSE](LICENSE) for details.
 
 ## Acknowledgments
@@ -276,6 +256,6 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
-**Built for Hack in Hills '26** - *Onchain Finance & Trading Track*
+**Built for Hack in Hills '26** - *Onchain Finance & Trading Track by TEAM GARUDA* 
 
 > *"The blockchain IS the matching engine."*
